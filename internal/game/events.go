@@ -12,11 +12,11 @@ func (g *Game) playerMovedEventHandler(event ecs.Event) {
 func (g *Game) playerWonEventHandler(event ecs.Event) {
 	playerComp, _ := g.world.ComponentManager.GetComponent(event.Entity, components.Player)
 	player := playerComp.(*components.PlayerComponent)
-	g.world.Logger.Printf("%s won!", player.Character)
+	g.displayManager.ShowGameResult(player.Character + " won!")
 	g.gameOver = true
 }
 
 func (g *Game) tieEventHandler(event ecs.Event) {
-	g.world.Logger.Printf("It's a tie!")
+	g.displayManager.ShowGameResult("It's a tie!")
 	g.gameOver = true
 }

@@ -1,32 +1,39 @@
 package game
 
 import (
-	"fmt"
 	"log"
+	"os"
 
 	"ttt/internal/game/components"
 	"ttt/internal/game/events"
 	"ttt/internal/game/systems"
+	"ttt/internal/game/ui/console"
 	"ttt/pkg/ecs"
 )
 
 type Game struct {
-	world         *ecs.World
-	gameOver      bool
-	isPlayer1Turn bool
+	world          *ecs.World
+	inputManager   console.ConsoleInputManager
+	displayManager console.ConsoleDisplayManager
+	gameOver       bool
+	isPlayer1Turn  bool
 }
 
 func NewGame() *Game {
-	world := ecs.NewWorld(log.Default())
+	logger := log.New(os.Stdout, "TicTacToe: ", log.LstdFlags)
+
+	world := ecs.NewWorld(logger)
 
 	// Register core ECS systems
 	world.AddSystem(&systems.MoveSystem{})
 	world.AddSystem(&systems.BoardSystem{})
 
 	return &Game{
-		world:         world,
-		gameOver:      false,
-		isPlayer1Turn: true,
+		world:          world,
+		inputManager:   console.NewConsoleInputManager(),
+		displayManager: console.NewConsoleDisplayManager(),
+		gameOver:       false,
+		isPlayer1Turn:  true,
 	}
 }
 
@@ -106,18 +113,10 @@ func (g *Game) Run() {
 		)
 		player := playerComp.(*components.PlayerComponent)
 
-		g.world.Logger.Printf(
-			"%s, please enter column and row (0-2) separated by a space:",
-			player.Character,
-		)
-		var row, col int
-		_, err := fmt.Scanf("%d %d", &col, &row)
-		if err != nil {
-			g.world.Logger.Println("Invalid input. Please try again.")
-			continue
-		}
+		g.displayManager.ShowTurnPrompt(player.Character)
+		row, col, valid := g.inputManager.GetPlayerMove()
 
-		if row < 0 || row > 2 || col < 0 || col > 2 {
+		if !valid {
 			g.world.Logger.Println("Invalid input. Please try again.")
 			continue
 		}
@@ -150,16 +149,5 @@ func (g Game) displayBoard() {
 	}
 	board := boardComp.(*components.BoardComponent)
 
-	fmt.Println()
-	for y := range 3 {
-		for x := range 3 {
-			if board.Board[y][x] == "" {
-				fmt.Print(".")
-			} else {
-				fmt.Print(board.Board[y][x])
-			}
-		}
-		fmt.Println()
-	}
-	fmt.Println()
+	g.displayManager.ShowBoard(board.Board)
 }
