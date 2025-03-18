@@ -38,8 +38,7 @@ func (m *MoveSystem) Update(world *ecs.World) {
 		moveIntent := moveIntentComp.(*components.MoveIntentComponent)
 
 		// Check if the move is valid
-		if moveIntent.Row >= 3 || moveIntent.Col >= 3 || moveIntent.Row < 0 || moveIntent.Col < 0 ||
-			boardComp.(*components.BoardComponent).Board[moveIntent.Row][moveIntent.Col] != "" {
+		if boardComp.(*components.BoardComponent).Board[moveIntent.Row][moveIntent.Col] != "" {
 			// Invalid move, remove the move intent component
 			world.ComponentManager.RemoveComponent(entity, components.MoveIntent)
 			continue
