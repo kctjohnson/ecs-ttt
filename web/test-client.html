@@ -1,0 +1,79 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Tic-Tac-Toe Websocket Test</title>
+    <style>
+      #log {
+        height: 300px;
+        overflow-y: scroll;
+        border: 1px solid #ccc;
+        padding: 10px;
+        margin-bottom: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Tic-Tac-Toe WebSocket Test</h1>
+    <div id="log"></div>
+    <input type="text" id="message" placeholder="Type a message...">
+    <button onclick="sendMessage()">Send</button>
+    <script>
+      const log = document.getElementById("log");
+      const messageInput = document.getElementById("message");
+      let socket;
+
+      function connect() {
+        socket = new WebSocket("ws://localhost:8082/ws");
+
+        socket.onopen = function (e) {
+          appendLog("Connected to server");
+        };
+
+        socket.onmessage = function (event) {
+          appendLog("Received: " + event.data);
+        };
+
+        socket.onclose = function (event) {
+          if (event.wasClean) {
+            appendLog(
+              `Connection closed cleanly, code=${event.code} reason=${event.reason}`,
+            );
+          } else {
+            appendLog("Connection died");
+          }
+          setTimeout(connect, 1000); // Reconnect after 1 second
+        };
+
+        socket.onerror = function (error) {
+          appendLog("WebSocket Error: " + error.message);
+        };
+      }
+
+      function sendMessage() {
+        const message = messageInput.value;
+        if (message) {
+          socket.send(message);
+          appendLog("Sent: " + message);
+          messageInput.value = "";
+        }
+      }
+
+      function appendLog(message) {
+        const item = document.createElement("div");
+        item.textContent = message;
+        log.appendChild(item);
+        log.scrollTop = log.scrollHeight;
+      }
+
+      // Connect when the page loads
+      connect();
+
+      // Send message when Enter key is pressed
+      messageInput.addEventListener("keypress", function (e) {
+        if (e.key === "Enter") {
+          sendMessage();
+        }
+      });
+    </script>
+  </body>
+</html>
