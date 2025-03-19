@@ -7,7 +7,9 @@ import (
 )
 
 // MoveSystem is responsible for evaluating and executing player moves
-type MoveSystem struct{}
+type MoveSystem struct {
+	ComponentAccess *components.ComponentAccess
+}
 
 func (m *MoveSystem) Update(world *ecs.World) {
 	// Get all entities with a move intent component
@@ -23,35 +25,29 @@ func (m *MoveSystem) Update(world *ecs.World) {
 	}
 
 	// Get the board component
-	boardEnt := boardEnts[0]
-	boardComp, hasBoardComp := world.ComponentManager.GetComponent(boardEnt, components.Board)
+	board, hasBoardComp := m.ComponentAccess.GetBoardComponent(boardEnts[0])
 	if !hasBoardComp {
 		return
 	}
 
 	for _, entity := range moveIntentEnts {
 		// Get the move intent component
-		moveIntentComp, _ := world.ComponentManager.GetComponent(
-			entity,
-			components.MoveIntent,
-		)
-		moveIntent := moveIntentComp.(*components.MoveIntentComponent)
+		moveIntent, _ := m.ComponentAccess.GetMoveIntentComponent(entity)
 
 		// Check if the move is valid
-		if boardComp.(*components.BoardComponent).Board[moveIntent.Row][moveIntent.Col] != "" {
+		if board.Board[moveIntent.Row][moveIntent.Col] != "" {
 			// Invalid move, remove the move intent component
 			world.ComponentManager.RemoveComponent(entity, components.MoveIntent)
 			continue
 		} else {
 			// Get the player component
-			playerComp, hasPlayerComp := world.ComponentManager.GetComponent(entity, components.Player)
+			player, hasPlayerComp := m.ComponentAccess.GetPlayerComponent(entity)
 			if !hasPlayerComp {
 				continue
 			}
-			player := playerComp.(*components.PlayerComponent)
 
 			// Update the board
-			boardComp.(*components.BoardComponent).Board[moveIntent.Row][moveIntent.Col] = player.Character
+			board.Board[moveIntent.Row][moveIntent.Col] = player.Character
 
 			// Remove the move intent component
 			world.ComponentManager.RemoveComponent(entity, components.MoveIntent)

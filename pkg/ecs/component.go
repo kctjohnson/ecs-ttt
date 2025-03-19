@@ -3,6 +3,7 @@ package ecs
 // ComponentInterface is a marker interface for all component types
 type ComponentInterface interface {
 	IsComponent()
+	GetType() ComponentType
 }
 
 // Component is a marker struct for all component types

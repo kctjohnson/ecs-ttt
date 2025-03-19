@@ -7,7 +7,9 @@ import (
 )
 
 // BoardSystem checks the state of the board, and sends out winner / tie events
-type BoardSystem struct{}
+type BoardSystem struct {
+	ComponentAccess *components.ComponentAccess
+}
 
 func (b *BoardSystem) Update(world *ecs.World) {
 	// Get the board
@@ -15,12 +17,11 @@ func (b *BoardSystem) Update(world *ecs.World) {
 	if len(boardEnts) == 0 {
 		return
 	}
-	boardEnt := boardEnts[0]
-	boardComp, hasBoardComp := world.ComponentManager.GetComponent(boardEnt, components.Board)
+
+	board, hasBoardComp := b.ComponentAccess.GetBoardComponent(boardEnts[0])
 	if !hasBoardComp {
 		return
 	}
-	board := boardComp.(*components.BoardComponent)
 
 	// Get the players
 	playerEnts := world.ComponentManager.GetAllEntitiesWithComponent(components.Player)
@@ -29,15 +30,10 @@ func (b *BoardSystem) Update(world *ecs.World) {
 	}
 
 	for _, playerEnt := range playerEnts {
-		playerComp, hasPlayerComp := world.ComponentManager.GetComponent(
-			playerEnt,
-			components.Player,
-		)
+		player, hasPlayerComp := b.ComponentAccess.GetPlayerComponent(playerEnt)
 		if !hasPlayerComp {
 			continue
 		}
-
-		player := playerComp.(*components.PlayerComponent)
 
 		// Check for winner
 		if b.checkIfWin(board, player.Character) {

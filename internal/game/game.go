@@ -12,11 +12,12 @@ import (
 )
 
 type Game struct {
-	world          *ecs.World
-	inputManager   console.ConsoleInputManager
-	displayManager console.ConsoleDisplayManager
-	gameOver       bool
-	isPlayer1Turn  bool
+	world           *ecs.World
+	inputManager    console.ConsoleInputManager
+	displayManager  console.ConsoleDisplayManager
+	componentAccess *components.ComponentAccess
+	gameOver        bool
+	isPlayer1Turn   bool
 }
 
 func NewGame() *Game {
@@ -24,16 +25,24 @@ func NewGame() *Game {
 
 	world := ecs.NewWorld(logger)
 
+	// Create the component access manager
+	componentAccess := components.NewComponentAccess(world)
+
 	// Register core ECS systems
-	world.AddSystem(&systems.MoveSystem{})
-	world.AddSystem(&systems.BoardSystem{})
+	world.AddSystem(&systems.MoveSystem{
+		ComponentAccess: componentAccess,
+	})
+	world.AddSystem(&systems.BoardSystem{
+		ComponentAccess: componentAccess,
+	})
 
 	return &Game{
-		world:          world,
-		inputManager:   console.NewConsoleInputManager(),
-		displayManager: console.NewConsoleDisplayManager(),
-		gameOver:       false,
-		isPlayer1Turn:  true,
+		world:           world,
+		inputManager:    console.NewConsoleInputManager(),
+		displayManager:  console.NewConsoleDisplayManager(),
+		componentAccess: componentAccess,
+		gameOver:        false,
+		isPlayer1Turn:   true,
 	}
 }
 
@@ -107,11 +116,7 @@ func (g *Game) Run() {
 		}
 
 		// Get the player component
-		playerComp, _ := g.world.ComponentManager.GetComponent(
-			playerEnt,
-			components.Player,
-		)
-		player := playerComp.(*components.PlayerComponent)
+		player, _ := g.componentAccess.GetPlayerComponent(playerEnt)
 
 		g.displayManager.ShowTurnPrompt(player.Character)
 		row, col, valid := g.inputManager.GetPlayerMove()
@@ -143,11 +148,11 @@ func (g Game) displayBoard() {
 	if len(boardEnts) == 0 {
 		return
 	}
-	boardComp, hasBoardComp := g.world.ComponentManager.GetComponent(boardEnts[0], components.Board)
+
+	board, hasBoardComp := g.componentAccess.GetBoardComponent(boardEnts[0])
 	if !hasBoardComp {
 		return
 	}
-	board := boardComp.(*components.BoardComponent)
 
 	g.displayManager.ShowBoard(board.Board)
 }

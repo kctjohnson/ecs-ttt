@@ -9,8 +9,12 @@ const (
 )
 
 type BoardComponent struct {
-	ecs.Component
 	Board [][]string
+}
+
+func (c BoardComponent) IsComponent() {}
+func (c BoardComponent) GetType() ecs.ComponentType {
+	return Board
 }
 
 type PlayerComponent struct {
@@ -18,10 +22,20 @@ type PlayerComponent struct {
 	Character string
 }
 
+func (c PlayerComponent) IsComponent() {}
+func (c PlayerComponent) GetType() ecs.ComponentType {
+	return Player
+}
+
 type MoveIntentComponent struct {
 	ecs.Component
 	Row int
 	Col int
+}
+
+func (c MoveIntentComponent) IsComponent() {}
+func (c MoveIntentComponent) GetType() ecs.ComponentType {
+	return MoveIntent
 }
 
 var ComponentTypes = []ecs.ComponentType{
