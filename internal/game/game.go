@@ -16,10 +16,6 @@ type Game struct {
 	inputManager    console.ConsoleInputManager
 	displayManager  console.ConsoleDisplayManager
 	componentAccess *components.ComponentAccess
-	player1         ecs.Entity
-	player2         ecs.Entity
-	gameOver        bool
-	isPlayer1Turn   bool
 }
 
 func NewGame() *Game {
@@ -43,8 +39,6 @@ func NewGame() *Game {
 		inputManager:    console.NewConsoleInputManager(),
 		displayManager:  console.NewConsoleDisplayManager(),
 		componentAccess: componentAccess,
-		gameOver:        false,
-		isPlayer1Turn:   true,
 	}
 }
 
@@ -65,8 +59,6 @@ func (g *Game) Initialize() {
 		&components.PlayerComponent{Character: "X"},
 	)
 
-	g.player1 = player1
-
 	// Make the player 2 entity
 	player2 := g.world.EntityManager.CreateEntity()
 	g.world.ComponentManager.AddComponent(
@@ -74,8 +66,6 @@ func (g *Game) Initialize() {
 		components.Player,
 		&components.PlayerComponent{Character: "O"},
 	)
-
-	g.player2 = player2
 
 	// Make the board entity
 	boardTiles := make([][]string, 3)
@@ -91,6 +81,17 @@ func (g *Game) Initialize() {
 			Board: boardTiles,
 		},
 	)
+
+	// Make the game state entity
+	gameState := g.world.EntityManager.CreateEntity()
+	g.world.ComponentManager.AddComponent(
+		gameState,
+		components.GameState,
+		&components.GameStateComponent{
+			PlayerTurn: player1,
+			GameOver:   false,
+		},
+	)
 }
 
 func (g *Game) registerComponentTypes() {
@@ -104,20 +105,19 @@ func (g *Game) Run() {
 	g.world.Logger.Println("Starting game...")
 
 	// Main game loop
-	for !g.gameOver {
+	for {
+		// Get the game state entity
+		gameState := g.getGameState()
+		if gameState == nil || gameState.GameOver {
+			break
+		}
+
 		// Display the board
 		g.displayBoard()
 
-		// Get the player entity
-		var playerEnt ecs.Entity
-		if g.isPlayer1Turn {
-			playerEnt = g.player1
-		} else {
-			playerEnt = g.player2
-		}
-
 		// Get the player component
-		player, _ := g.componentAccess.GetPlayerComponent(playerEnt)
+		playerEnt := gameState.PlayerTurn
+		player, _ := g.componentAccess.GetPlayerComponent(gameState.PlayerTurn)
 
 		g.displayManager.ShowTurnPrompt(player.Character)
 		row, col, valid := g.inputManager.GetPlayerMove()
@@ -141,6 +141,7 @@ func (g *Game) Run() {
 		)
 
 		g.world.Update()
+
 	}
 }
 
@@ -156,4 +157,18 @@ func (g Game) displayBoard() {
 	}
 
 	g.displayManager.ShowBoard(board.Board)
+}
+
+func (g *Game) getGameState() *components.GameStateComponent {
+	gameStateEnts := g.world.ComponentManager.GetAllEntitiesWithComponent(components.GameState)
+	if len(gameStateEnts) == 0 {
+		return nil
+	}
+
+	gameState, hasComp := g.componentAccess.GetGameStateComponent(gameStateEnts[0])
+	if !hasComp {
+		return nil
+	}
+
+	return gameState
 }
