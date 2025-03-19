@@ -56,7 +56,10 @@ func (g *Game) Initialize() {
 	g.world.ComponentManager.AddComponent(
 		player1,
 		components.Player,
-		&components.PlayerComponent{Character: "X"},
+		&components.PlayerComponent{
+			Character: "X",
+			CellState: components.Player1,
+		},
 	)
 
 	// Make the player 2 entity
@@ -64,13 +67,19 @@ func (g *Game) Initialize() {
 	g.world.ComponentManager.AddComponent(
 		player2,
 		components.Player,
-		&components.PlayerComponent{Character: "O"},
+		&components.PlayerComponent{
+			Character: "O",
+			CellState: components.Player2,
+		},
 	)
 
 	// Make the board entity
-	boardTiles := make([][]string, 3)
+	boardTiles := make([][]components.CellState, 3)
 	for i := range boardTiles {
-		boardTiles[i] = make([]string, 3)
+		boardTiles[i] = make([]components.CellState, 3)
+		for j := range boardTiles[i] {
+			boardTiles[i][j] = components.Empty
+		}
 	}
 
 	board := g.world.EntityManager.CreateEntity()
@@ -156,7 +165,35 @@ func (g Game) displayBoard() {
 		return
 	}
 
-	g.displayManager.ShowBoard(board.Board)
+	// Get the display characters from player components
+	var p1Char, p2Char string
+	playerEnts := g.world.ComponentManager.GetAllEntitiesWithComponent(components.Player)
+	for _, ent := range playerEnts {
+		player, _ := g.componentAccess.GetPlayerComponent(ent)
+		if player.CellState == components.Player1 {
+			p1Char = player.Character
+		} else {
+			p2Char = player.Character
+		}
+	}
+
+	// Translate the board to a string representation
+	displayBoard := make([][]string, 3)
+	for y := range board.Board {
+		displayBoard[y] = make([]string, 3)
+		for x := range board.Board[y] {
+			switch board.Board[y][x] {
+			case components.Player1:
+				displayBoard[y][x] = p1Char
+			case components.Player2:
+				displayBoard[y][x] = p2Char
+			case components.Empty:
+				displayBoard[y][x] = ""
+			}
+		}
+	}
+
+	g.displayManager.ShowBoard(displayBoard)
 }
 
 func (g *Game) getGameState() *components.GameStateComponent {

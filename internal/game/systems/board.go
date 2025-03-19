@@ -36,7 +36,7 @@ func (b *BoardSystem) Update(world *ecs.World) {
 		}
 
 		// Check for winner
-		if b.checkIfWin(board, player.Character) {
+		if b.checkIfWin(board, player) {
 			world.QueueEvent(events.PlayerWonEvent{
 				Ent: playerEnt,
 			})
@@ -53,42 +53,45 @@ func (b *BoardSystem) Update(world *ecs.World) {
 	}
 }
 
-func (b BoardSystem) checkIfWin(board *components.BoardComponent, playerChar string) bool {
+func (b BoardSystem) checkIfWin(
+	board *components.BoardComponent,
+	player *components.PlayerComponent,
+) bool {
 	// Check rows
-	if board.Board[0][0] == playerChar && board.Board[0][1] == playerChar &&
-		board.Board[0][2] == playerChar {
+	if board.Board[0][0] == player.CellState && board.Board[0][1] == player.CellState &&
+		board.Board[0][2] == player.CellState {
 		return true
 	}
-	if board.Board[1][0] == playerChar && board.Board[1][1] == playerChar &&
-		board.Board[1][2] == playerChar {
+	if board.Board[1][0] == player.CellState && board.Board[1][1] == player.CellState &&
+		board.Board[1][2] == player.CellState {
 		return true
 	}
-	if board.Board[2][0] == playerChar && board.Board[2][1] == playerChar &&
-		board.Board[2][2] == playerChar {
+	if board.Board[2][0] == player.CellState && board.Board[2][1] == player.CellState &&
+		board.Board[2][2] == player.CellState {
 		return true
 	}
 
 	// Check columns
-	if board.Board[0][0] == playerChar && board.Board[1][0] == playerChar &&
-		board.Board[2][0] == playerChar {
+	if board.Board[0][0] == player.CellState && board.Board[1][0] == player.CellState &&
+		board.Board[2][0] == player.CellState {
 		return true
 	}
-	if board.Board[0][1] == playerChar && board.Board[1][1] == playerChar &&
-		board.Board[2][1] == playerChar {
+	if board.Board[0][1] == player.CellState && board.Board[1][1] == player.CellState &&
+		board.Board[2][1] == player.CellState {
 		return true
 	}
-	if board.Board[0][2] == playerChar && board.Board[1][2] == playerChar &&
-		board.Board[2][2] == playerChar {
+	if board.Board[0][2] == player.CellState && board.Board[1][2] == player.CellState &&
+		board.Board[2][2] == player.CellState {
 		return true
 	}
 
 	// Check diagonals
-	if board.Board[0][0] == playerChar && board.Board[1][1] == playerChar &&
-		board.Board[2][2] == playerChar {
+	if board.Board[0][0] == player.CellState && board.Board[1][1] == player.CellState &&
+		board.Board[2][2] == player.CellState {
 		return true
 	}
-	if board.Board[0][2] == playerChar && board.Board[1][1] == playerChar &&
-		board.Board[2][0] == playerChar {
+	if board.Board[0][2] == player.CellState && board.Board[1][1] == player.CellState &&
+		board.Board[2][0] == player.CellState {
 		return true
 	}
 
@@ -98,7 +101,7 @@ func (b BoardSystem) checkIfWin(board *components.BoardComponent, playerChar str
 func (b BoardSystem) checkIfDraw(board *components.BoardComponent) bool {
 	for i := range 3 {
 		for j := range 3 {
-			if board.Board[i][j] == "" {
+			if board.Board[i][j] == components.Empty {
 				return false
 			}
 		}

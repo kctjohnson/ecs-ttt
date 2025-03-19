@@ -35,7 +35,7 @@ func (m *MoveSystem) Update(world *ecs.World) {
 		moveIntent, _ := m.ComponentAccess.GetMoveIntentComponent(entity)
 
 		// Check if the move is valid
-		if board.Board[moveIntent.Row][moveIntent.Col] != "" {
+		if board.Board[moveIntent.Row][moveIntent.Col] != components.Empty {
 			// Invalid move, remove the move intent component
 			world.ComponentManager.RemoveComponent(entity, components.MoveIntent)
 			continue
@@ -47,7 +47,7 @@ func (m *MoveSystem) Update(world *ecs.World) {
 			}
 
 			// Update the board
-			board.Board[moveIntent.Row][moveIntent.Col] = player.Character
+			board.Board[moveIntent.Row][moveIntent.Col] = player.CellState
 
 			// Remove the move intent component
 			world.ComponentManager.RemoveComponent(entity, components.MoveIntent)

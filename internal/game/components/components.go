@@ -20,8 +20,16 @@ func (c GameStateComponent) GetType() ecs.ComponentType {
 	return GameState
 }
 
+type CellState int
+
+const (
+	Empty CellState = iota
+	Player1
+	Player2
+)
+
 type BoardComponent struct {
-	Board [][]string
+	Board [][]CellState
 }
 
 func (c BoardComponent) IsComponent() {}
@@ -32,6 +40,7 @@ func (c BoardComponent) GetType() ecs.ComponentType {
 type PlayerComponent struct {
 	ecs.Component
 	Character string
+	CellState CellState
 }
 
 func (c PlayerComponent) IsComponent() {}
