@@ -16,6 +16,8 @@ type Game struct {
 	inputManager    console.ConsoleInputManager
 	displayManager  console.ConsoleDisplayManager
 	componentAccess *components.ComponentAccess
+	player1         ecs.Entity
+	player2         ecs.Entity
 	gameOver        bool
 	isPlayer1Turn   bool
 }
@@ -63,6 +65,8 @@ func (g *Game) Initialize() {
 		&components.PlayerComponent{Character: "X"},
 	)
 
+	g.player1 = player1
+
 	// Make the player 2 entity
 	player2 := g.world.EntityManager.CreateEntity()
 	g.world.ComponentManager.AddComponent(
@@ -70,6 +74,8 @@ func (g *Game) Initialize() {
 		components.Player,
 		&components.PlayerComponent{Character: "O"},
 	)
+
+	g.player2 = player2
 
 	// Make the board entity
 	boardTiles := make([][]string, 3)
@@ -103,16 +109,11 @@ func (g *Game) Run() {
 		g.displayBoard()
 
 		// Get the player entity
-		playerEnts := g.world.ComponentManager.GetAllEntitiesWithComponent(components.Player)
-		if len(playerEnts) != 2 {
-			g.world.Logger.Println("Error: Missing player components")
-			continue
-		}
 		var playerEnt ecs.Entity
 		if g.isPlayer1Turn {
-			playerEnt = playerEnts[0]
+			playerEnt = g.player1
 		} else {
-			playerEnt = playerEnts[1]
+			playerEnt = g.player2
 		}
 
 		// Get the player component
