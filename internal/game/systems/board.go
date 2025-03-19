@@ -37,14 +37,18 @@ func (b *BoardSystem) Update(world *ecs.World) {
 
 		// Check for winner
 		if b.checkIfWin(board, player.Character) {
-			world.QueueEvent(events.PlayerWon, playerEnt, nil)
+			world.QueueEvent(events.PlayerWonEvent{
+				Ent: playerEnt,
+			})
 			return
 		}
 	}
 
 	// Check for a draw (No more spaces to move and no winner)
 	if b.checkIfDraw(board) {
-		world.QueueEvent(events.Tie, -1, nil)
+		world.QueueEvent(events.TieEvent{
+			Ent: -1,
+		})
 		return
 	}
 }

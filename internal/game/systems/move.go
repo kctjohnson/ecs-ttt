@@ -53,9 +53,10 @@ func (m *MoveSystem) Update(world *ecs.World) {
 			world.ComponentManager.RemoveComponent(entity, components.MoveIntent)
 
 			// Send out events
-			world.QueueEvent(events.PlayerMoved, entity, map[string]any{
-				"row": moveIntent.Row,
-				"col": moveIntent.Col,
+			world.QueueEvent(events.PlayerMovedEvent{
+				Ent: entity,
+				Row: moveIntent.Row,
+				Col: moveIntent.Col,
 			})
 		}
 	}

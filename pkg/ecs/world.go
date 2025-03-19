@@ -7,8 +7,8 @@ type World struct {
 	EntityManager    *EntityManager
 	ComponentManager *ComponentManager
 	systems          []System
-	eventQueue       []Event // Simple event queue for communication
-	eventHandlers    map[EventType][]func(Event)
+	eventQueue       []EventInterface // Simple event queue for communication
+	eventHandlers    map[EventType][]func(EventInterface)
 	Logger           *log.Logger
 }
 
@@ -17,8 +17,8 @@ func NewWorld(logger *log.Logger) *World {
 		EntityManager:    NewEntityManager(),
 		ComponentManager: NewComponentManager(),
 		systems:          []System{},
-		eventQueue:       []Event{},
-		eventHandlers:    make(map[EventType][]func(Event)),
+		eventQueue:       []EventInterface{},
+		eventHandlers:    make(map[EventType][]func(EventInterface)),
 		Logger:           logger,
 	}
 }
@@ -44,28 +44,24 @@ func (w *World) Update() {
 // Simple event system for communication between ECS and external systems
 type EventType string
 
-type Event struct {
-	Type   EventType
-	Entity Entity
-	Data   map[string]any
+type EventInterface interface {
+	Type() EventType
+	Entity() Entity
+	Data() any
 }
 
-func (w *World) RegisterEventHandler(eventType EventType, handler func(Event)) {
+func (w *World) RegisterEventHandler(eventType EventType, handler func(EventInterface)) {
 	w.eventHandlers[eventType] = append(w.eventHandlers[eventType], handler)
 }
 
-func (w *World) QueueEvent(eventType EventType, entity Entity, data map[string]any) {
-	w.eventQueue = append(w.eventQueue, Event{
-		Type:   eventType,
-		Entity: entity,
-		Data:   data,
-	})
+func (w *World) QueueEvent(event EventInterface) {
+	w.eventQueue = append(w.eventQueue, event)
 }
 
 func (w *World) processEvents() {
 	// Process all events in the queue
 	for _, event := range w.eventQueue {
-		if handlers, exists := w.eventHandlers[event.Type]; exists {
+		if handlers, exists := w.eventHandlers[event.Type()]; exists {
 			for _, handler := range handlers {
 				handler(event)
 			}
