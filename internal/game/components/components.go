@@ -3,10 +3,22 @@ package components
 import "ttt/pkg/ecs"
 
 const (
+	GameState  ecs.ComponentType = "game_state"
 	Board      ecs.ComponentType = "board"
 	Player     ecs.ComponentType = "player"
 	MoveIntent ecs.ComponentType = "move_intent"
 )
+
+type GameStateComponent struct {
+	ecs.Component
+	PlayerTurn ecs.Entity
+	GameOver   bool
+}
+
+func (c GameStateComponent) IsComponent() {}
+func (c GameStateComponent) GetType() ecs.ComponentType {
+	return GameState
+}
 
 type BoardComponent struct {
 	Board [][]string

@@ -12,6 +12,14 @@ func NewComponentAccess(world *ecs.World) *ComponentAccess {
 	return &ComponentAccess{world: world}
 }
 
+func (ca *ComponentAccess) GetGameStateComponent(entity ecs.Entity) (*GameStateComponent, bool) {
+	component, found := ca.world.ComponentManager.GetComponent(entity, GameState)
+	if !found {
+		return nil, false
+	}
+	return component.(*GameStateComponent), true
+}
+
 func (ca *ComponentAccess) GetBoardComponent(entity ecs.Entity) (*BoardComponent, bool) {
 	component, found := ca.world.ComponentManager.GetComponent(entity, Board)
 	if !found {
