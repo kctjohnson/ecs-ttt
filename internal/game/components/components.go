@@ -15,7 +15,6 @@ type GameStateComponent struct {
 	GameOver   bool
 }
 
-func (c GameStateComponent) IsComponent() {}
 func (c GameStateComponent) GetType() ecs.ComponentType {
 	return GameState
 }
@@ -29,10 +28,10 @@ const (
 )
 
 type BoardComponent struct {
+	ecs.Component
 	Board [][]CellState
 }
 
-func (c BoardComponent) IsComponent() {}
 func (c BoardComponent) GetType() ecs.ComponentType {
 	return Board
 }
@@ -43,7 +42,6 @@ type PlayerComponent struct {
 	CellState CellState
 }
 
-func (c PlayerComponent) IsComponent() {}
 func (c PlayerComponent) GetType() ecs.ComponentType {
 	return Player
 }
@@ -54,13 +52,15 @@ type MoveIntentComponent struct {
 	Col int
 }
 
-func (c MoveIntentComponent) IsComponent() {}
 func (c MoveIntentComponent) GetType() ecs.ComponentType {
 	return MoveIntent
 }
 
 var ComponentTypes = []ecs.ComponentType{
+	GameState,
 	Board,
 	Player,
 	MoveIntent,
+	NetworkIdentity,
+	GameSession,
 }

@@ -3,11 +3,13 @@ package game
 import (
 	"log"
 	"os"
+	"time"
 
 	"ttt/internal/game/components"
 	"ttt/internal/game/events"
 	"ttt/internal/game/systems"
 	"ttt/internal/game/ui/console"
+	"ttt/internal/network"
 	"ttt/pkg/ecs"
 )
 
@@ -16,14 +18,13 @@ type Game struct {
 	inputManager    console.ConsoleInputManager
 	displayManager  console.ConsoleDisplayManager
 	componentAccess *components.ComponentAccess
+	networkSystem   *systems.NetworkSystem
+	isNetworked     bool
 }
 
-func NewGame() *Game {
+func NewGame(networked bool, server *network.GameServer) *Game {
 	logger := log.New(os.Stdout, "TicTacToe: ", log.LstdFlags)
-
 	world := ecs.NewWorld(logger)
-
-	// Create the component access manager
 	componentAccess := components.NewComponentAccess(world)
 
 	// Register core ECS systems
@@ -34,12 +35,24 @@ func NewGame() *Game {
 		ComponentAccess: componentAccess,
 	})
 
-	return &Game{
+	game := &Game{
 		world:           world,
 		inputManager:    console.NewConsoleInputManager(),
 		displayManager:  console.NewConsoleDisplayManager(),
 		componentAccess: componentAccess,
+		isNetworked:     networked,
 	}
+
+	if networked && server != nil {
+		networkSystem := &systems.NetworkSystem{
+			ComponentAccess: componentAccess,
+			Server:          server,
+		}
+		world.AddSystem(networkSystem)
+		game.networkSystem = networkSystem
+	}
+
+	return game
 }
 
 func (g *Game) Initialize() {
@@ -113,44 +126,51 @@ func (g *Game) registerComponentTypes() {
 func (g *Game) Run() {
 	g.world.Logger.Println("Starting game...")
 
-	// Main game loop
-	for {
-		// Get the game state entity
-		gameState := g.getGameState()
-		if gameState == nil || gameState.GameOver {
-			break
+	if g.isNetworked {
+		// In networked mode, just keep updating the world
+		for {
+			g.world.Update()
+			time.Sleep(100 * time.Millisecond) // Update at 10 Hz
 		}
+	} else {
+		for {
+			// Get the game state entity
+			gameState := g.getGameState()
+			if gameState == nil || gameState.GameOver {
+				break
+			}
 
-		// Display the board
-		g.displayBoard()
+			// Display the board
+			g.displayBoard()
 
-		// Get the player component
-		playerEnt := gameState.PlayerTurn
-		player, _ := g.componentAccess.GetPlayerComponent(gameState.PlayerTurn)
+			// Get the player component
+			playerEnt := gameState.PlayerTurn
+			player, _ := g.componentAccess.GetPlayerComponent(gameState.PlayerTurn)
 
-		g.displayManager.ShowTurnPrompt(player.Character)
-		row, col, valid := g.inputManager.GetPlayerMove()
+			g.displayManager.ShowTurnPrompt(player.Character)
+			row, col, valid := g.inputManager.GetPlayerMove()
 
-		if !valid {
-			g.world.Logger.Println("Invalid input. Please try again.")
-			continue
+			if !valid {
+				g.world.Logger.Println("Invalid input. Please try again.")
+				continue
+			}
+
+			// Create a move intent component
+			moveIntent := &components.MoveIntentComponent{
+				Row: row,
+				Col: col,
+			}
+
+			// Add the move intent component to the player entity
+			g.world.ComponentManager.AddComponent(
+				playerEnt,
+				components.MoveIntent,
+				moveIntent,
+			)
+
+			g.world.Update()
+
 		}
-
-		// Create a move intent component
-		moveIntent := &components.MoveIntentComponent{
-			Row: row,
-			Col: col,
-		}
-
-		// Add the move intent component to the player entity
-		g.world.ComponentManager.AddComponent(
-			playerEnt,
-			components.MoveIntent,
-			moveIntent,
-		)
-
-		g.world.Update()
-
 	}
 }
 

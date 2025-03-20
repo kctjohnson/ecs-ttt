@@ -47,3 +47,23 @@ func (ca *ComponentAccess) GetMoveIntentComponent(
 	}
 	return component.(*MoveIntentComponent), true
 }
+
+func (ca *ComponentAccess) GetNetworkIdentityComponent(
+	entity ecs.Entity,
+) (*NetworkIdentityComponent, bool) {
+	component, found := ca.world.ComponentManager.GetComponent(entity, NetworkIdentity)
+	if !found {
+		return nil, false
+	}
+	return component.(*NetworkIdentityComponent), true
+}
+
+func (ca *ComponentAccess) GetGameSessionComponent(
+	entity ecs.Entity,
+) (*GameSessionComponent, bool) {
+	component, found := ca.world.ComponentManager.GetComponent(entity, GameSession)
+	if !found {
+		return nil, false
+	}
+	return component.(*GameSessionComponent), true
+}

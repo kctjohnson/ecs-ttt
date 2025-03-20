@@ -18,10 +18,21 @@ func main() {
 	logger := log.New(os.Stdout, "TicTacToe: ", log.LstdFlags)
 
 	if *serverMode {
+		// Run in server mdoe
 		server := network.NewGameServer(logger)
+
+		// Create a networked game instance connected to the server
+		game := game.NewGame(true, server)
+		game.Initialize()
+
+		// Run the game in a separate goroutine
+		go game.Run()
+
+		// Start the server
 		logger.Fatal(server.Start(*address))
 	} else {
-		g := game.NewGame()
+		// Run in local game mode
+		g := game.NewGame(false, nil)
 		g.Initialize()
 		g.Run()
 	}

@@ -1,6 +1,8 @@
 package network
 
 import (
+	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"sync"
@@ -8,6 +10,12 @@ import (
 
 	"github.com/gorilla/websocket"
 )
+
+// Message queue for processing
+type messageQueue struct {
+	messages []*Message
+	lock     sync.Mutex
+}
 
 // ClientConnection represents a connected client
 type ClientConnection struct {
@@ -17,10 +25,11 @@ type ClientConnection struct {
 
 // GameServer manages WebSocket connections and game instances
 type GameServer struct {
-	clients     map[string]*ClientConnection
-	clientsLock sync.Mutex
-	upgrader    websocket.Upgrader
-	logger      *log.Logger
+	clients      map[string]*ClientConnection
+	messageQueue messageQueue
+	clientsLock  sync.Mutex
+	upgrader     websocket.Upgrader
+	logger       *log.Logger
 }
 
 func NewGameServer(logger *log.Logger) *GameServer {
@@ -86,26 +95,64 @@ func (gs *GameServer) unregisterClient(clientID string) {
 	}
 }
 
+func (gs *GameServer) SendToClient(clientID string, msgType MessageType, payload any) error {
+	gs.clientsLock.Lock()
+	client, exists := gs.clients[clientID]
+	gs.clientsLock.Unlock()
+
+	if !exists {
+		return fmt.Errorf("client not found: %s", clientID)
+	}
+
+	msg, err := NewMessage(msgType, clientID, payload)
+	if err != nil {
+		return err
+	}
+
+	jsonMsg, err := json.Marshal(msg)
+	if err != nil {
+		return err
+	}
+
+	return client.Conn.WriteMessage(websocket.TextMessage, jsonMsg)
+}
+
+func (gs *GameServer) GetPendingMessages() []*Message {
+	gs.messageQueue.lock.Lock()
+	defer gs.messageQueue.lock.Unlock()
+
+	messages := gs.messageQueue.messages
+	gs.messageQueue.messages = []*Message{}
+	return messages
+}
+
 // handleClientMessages processes messages from a client
 func (gs *GameServer) handleClientMessages(client *ClientConnection) {
 	defer gs.unregisterClient(client.ID)
 
 	for {
-		// Read message
-		messageType, message, err := client.Conn.ReadMessage()
+		_, rawMessage, err := client.Conn.ReadMessage()
 		if err != nil {
 			gs.logger.Printf("Error reading message from client %s: %v", client.ID, err)
-			break
+			return
 		}
 
-		// For now, just log the message
-		gs.logger.Printf("Received message from client %s: %s", client.ID, message)
-
-		// Echo the message back (for testing)
-		if err := client.Conn.WriteMessage(messageType, message); err != nil {
-			gs.logger.Printf("Error writing message to client %s: %v", client.ID, err)
-			break
+		// Try to parse the message
+		var msg Message
+		if err := json.Unmarshal(rawMessage, &msg); err != nil {
+			gs.logger.Printf("Invalid message format from client %s: %v", client.ID, err)
+			continue
 		}
+
+		// Ensure the client ID is correct
+		msg.ClientID = client.ID
+
+		// Queue the message for processing
+		gs.messageQueue.lock.Lock()
+		gs.messageQueue.messages = append(gs.messageQueue.messages, &msg)
+		gs.messageQueue.lock.Unlock()
+
+		gs.logger.Printf("Queued message from client %s: %s", client.ID, msg.Type)
 	}
 }
 
